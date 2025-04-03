@@ -320,7 +320,7 @@ if __name__ == '__main__':
         )
 
     setup(
-        name='mayavi',
+        name='mayavi-dev',
         version=info['__version__'],
         author="Prabhu Ramachandran, et al.",
         author_email="prabhu@aero.iitb.ac.in",
@@ -378,6 +378,7 @@ if __name__ == '__main__':
         ext_modules=ext_modules,
         install_requires=info['__requires__'],
         license="BSD",
+        long_description_content_type='text/markdown',
         long_description=Path('README.rst').read_text(encoding='utf-8'),
         platforms=["Windows", "Linux", "Mac OS-X", "Unix", "Solaris"],
         zip_safe=False,
