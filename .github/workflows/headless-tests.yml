@@ -3,11 +3,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
   cancel-in-progress: true
 
-on:
-  pull_request:
-  schedule:
-    # Run test at 0400 UTC on Saturday.
-    - cron: '0 4 * * 6'
+on: [ pull_request, workflow_dispatch ]
 
 jobs:
   tests:
