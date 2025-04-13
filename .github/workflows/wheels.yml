@@ -1,0 +1,78 @@
+name: Build and Publish Wheels
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
+  cancel-in-progress: true
+
+on:
+    push:
+        tags:
+        - 'v*'
+    workflow_dispatch:
+
+jobs:
+  build:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cibw_archs: "x86_64"
+          - os: windows-latest
+            cibw_archs: "auto64"
+          - os: macos-13
+            cibw_archs: "x86_64"
+          - os: macos-latest
+            cibw_archs: "arm64"
+      fail-fast: false
+    env:
+      CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
+      CIBW_ARCHS: ${{ matrix.cibw_archs }}
+      CIBW_SKIP: "pp* *-musllinux*"
+      CIBW_BUILD_VERBOSITY: "1"
+      CIBW_TEST_SKIP: "*"
+      CIBW_ENVIRONMENT: "ETS_TOOLKIT=null"
+      CIBW_BEFORE_BUILD: >
+        pip install -U pip &&
+        pip install numpy pillow vtk traitsui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel
+
+      - name: Build wheels
+        run: cibuildwheel --output-dir wheelhouse
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+
+  publish:
+    name: Publish wheels to PyPI
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mayavi-dev
+    permissions:
+      id-token: write
+    steps:
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
